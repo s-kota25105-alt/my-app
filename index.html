@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>くじら店長の海底カフェ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap');
+        body {
+            font-family: 'Kosugi Maru', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden; /* スクロールを完全に防止 */
+        }
+        /* 海底のゆらゆらアニメーション */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .floater {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes bubble {
+            0% { transform: translateY(100%) scale(0.8); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-120vh) scale(1.2); opacity: 0; }
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: bubble 8s linear infinite;
+        }
+        /* 波のゆらぎ */
+        .sea-bg {
+            background: linear-gradient(180deg, #1a365d 0%, #0f172a 100%);
+            overflow: hidden;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-0 md:p-2">
+
+    <!-- メインコンテナ：横画面フィット設計 -->
+    <div class="sea-bg w-full max-w-5xl h-screen md:h-[650px] md:rounded-3xl flex flex-col justify-between shadow-2xl relative border border-blue-900/50 overflow-hidden">
+        <!-- 泡のバックグラウンド要素 -->
+        <div id="bubble-container" class="absolute inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+        <!-- ヘッダー / ステータス -->
+        <header class="p-3 bg-slate-900/80 backdrop-blur-md border-b border-blue-800/40 z-10 flex justify-between items-center h-14">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 p-1.5 rounded-full text-white">
+                    <i data-lucide="waves" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h1 class="text-xs md:text-sm font-bold text-blue-200">くじら店長の海底カフェ</h1>
+                    <p class="text-[10px] text-blue-400">Day <span id="day-count">1</span></p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- 一時停止ボタン -->
+                <button id="header-pause-btn" onclick="togglePause()" class="bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 px-2.5 py-1 rounded-full text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 transition-all active:scale-95">
+                    <i data-lucide="pause" class="w-3.5 h-3.5" id="pause-icon"></i>
+                    <span id="pause-text">一時停止</span>
+                </button>
+
+                <div class="flex items-center gap-1 bg-yellow-950/50 border border-yellow-700/50 px-2.5 py-0.5 rounded-full">
+                    <span class="text-yellow-400 font-bold text-xs md:text-sm">🪙 <span id="coin-count">0</span></span>
+                </div>
+                <div class="flex items-center gap-1 bg-red-950/50 border border-red-700/50 px-2.5 py-0.5 rounded-full">
+                    <span class="text-red-400 font-bold text-xs md:text-sm">❤️ <span id="reputation-count">∞</span></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- メイン画面エリア (横型2カラム構成) -->
+        <main class="flex-1 flex z-10 relative overflow-hidden p-3 gap-3 min-h-0">
+            
+            <!-- スタート・タイトル画面 -->
+            <div id="start-screen" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-all duration-500">
+                <div class="floater mb-4 text-5xl">🐳</div>
+                <h2 class="text-xl md:text-2xl font-black text-blue-300 mb-1">くじら店長の海底カフェ</h2>
+                <p class="text-xs text-slate-400 mb-4 max-w-md">
+                    海の底のおだやかなカフェへようこそ！<br>
+                    ライフは無限ですので、のんびり、ゆったりと海の仲間たちをおもてなししましょう。
+                </p>
+                
+                <div class="bg-slate-900/85 border border-blue-800/40 rounded-xl p-3 mb-4 text-left w-full max-w-md text-[11px] space-y-1">
+                    <p class="font-bold text-blue-300 text-center text-xs mb-1">💡 あそびかた 💡</p>
+                    <p>1. お客さんの吹き出しの「注文レシピ」をチェック！</p>
+                    <p>2. 下の「食材」をタップしてトレイ（調理台）にセット！</p>
+                    <p>3. 「左/中央/右のお客へ」ボタンをタップして料理を提供！</p>
+                    <p>4. ライフは無限（∞）なので、マイペースに遊んで大丈夫です！</p>
+                </div>
+
+                <button onclick="startGame()" class="w-full max-w-xs bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-2 px-6 rounded-xl shadow-lg shadow-blue-500/20 transform active:scale-95 transition-all text-sm">
+                    お店をオープンする！ 🌊
+                </button>
+            </div>
+
+            <!-- 一時停止（ポーズ）オーバーレイ画面 -->
+            <div id="pause-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-45 hidden transition-all duration-300">
+                <div class="floater mb-3 text-5xl">🐋💤</div>
+                <h2 class="text-xl font-bold text-blue-300 mb-1">一時停止中</h2>
+                <p class="text-xs text-slate-400 mb-6">カフェは今、お昼寝タイムをとっています。</p>
+                <button onclick="togglePause()" class="w-full max-w-xs bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2 px-6 rounded-xl shadow-lg shadow-emerald-500/10 transform active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="play" class="w-4 h-4"></i> お店に戻る
+                </button>
+            </div>
+
+            <!-- リザルト・ゲームオーバー画面（※今回はライフ無限のため基本表示されませんが、リセット等用に残しています） -->
+            <div id="gameover-screen" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 hidden transition-all duration-500">
+                <div class="text-5xl mb-4">😵</div>
+                <h2 class="text-xl font-bold text-red-400 mb-2">カフェを一旦お休みします</h2>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 w-full max-w-xs mb-6 text-center">
+                    <p class="text-xs text-slate-400">今回の営業成績</p>
+                    <p class="text-3xl font-bold text-yellow-400 my-2">🪙 <span id="final-coins">0</span></p>
+                    <p class="text-sm text-blue-300">営業日数: <span id="final-days">1</span>日</p>
+                </div>
+                <button onclick="restartGame()" class="w-full max-w-xs bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl transition-all">
+                    もう一度営業する 🐳
+                </button>
+            </div>
+
+            <!-- 【左カラム】調理台 & 素材棚（調理コントロールエリア） -->
+            <div class="w-5/12 flex flex-col justify-between gap-2 border-r border-blue-900/30 pr-3 min-h-0">
+                
+                <!-- くじら店長＆アクションエリア -->
+                <div class="bg-slate-900/50 rounded-xl p-2.5 border border-blue-900/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="text-3xl floater" id="kujira-character">🐳</div>
+                        <div>
+                            <div class="text-[10px] text-blue-300 font-bold">店長 クーさん</div>
+                            <div class="text-[8px] text-slate-400">「マイペースで大丈夫だよ〜」</div>
+                        </div>
+                    </div>
+                    <!-- くじら店長スペシャルスキル -->
+                    <button id="skill-btn" onclick="useKujiraSkill()" class="relative overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-2 py-1 rounded-lg text-[10px] font-bold shadow-md hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                        <span class="flex items-center gap-0.5">
+                            🎵 くじらの歌
+                        </span>
+                        <div id="skill-cooldown-overlay" class="absolute inset-0 bg-black/60 flex items-center justify-center text-[8px] font-bold text-white transition-all w-0"></div>
+                    </button>
+                </div>
+
+                <!-- 現在の作成トレイ -->
+                <div class="bg-slate-950/60 rounded-xl p-2 border border-blue-950 flex-1 flex flex-col justify-between min-h-0">
+                    <div class="flex justify-between items-center border-b border-blue-950 pb-1">
+                        <span class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                            🍳 トレイ（調理台）
+                        </span>
+                        <button onclick="clearTray()" class="text-[8px] bg-red-950/40 text-red-400 hover:bg-red-950/80 border border-red-900/30 px-1.5 py-0.5 rounded transition-all">
+                            全部捨てる
+                        </button>
+                    </div>
+                    
+                    <div class="flex-1 flex justify-center items-center gap-2 py-1 min-h-[48px] overflow-hidden">
+                        <!-- トレイの中身 -->
+                        <div id="tray-slots" class="flex gap-1"></div>
+                        <div id="tray-empty-message" class="text-[10px] text-slate-500 italic">トッピングをタップ</div>
+                    </div>
+
+                    <!-- 提供ボタン -->
+                    <div class="grid grid-cols-3 gap-1 pt-1 border-t border-blue-950">
+                        <button onclick="deliverToCustomer(0)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-[9px] transition-all active:scale-95 text-center">
+                            🪑 左へ
+                        </button>
+                        <button onclick="deliverToCustomer(1)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-[9px] transition-all active:scale-95 text-center">
+                            🪑 中央へ
+                        </button>
+                        <button onclick="deliverToCustomer(2)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-[9px] transition-all active:scale-95 text-center">
+                            🪑 右へ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 素材棚 -->
+                <div class="bg-slate-900/20 p-2 rounded-xl border border-blue-950">
+                    <p class="text-[10px] text-slate-400 font-bold mb-1.5 flex items-center gap-1">
+                        📦 食材・素材
+                    </p>
+                    <div class="grid grid-cols-4 gap-1.5" id="ingredients-grid">
+                        <!-- JSで動的にトッピングをロード -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 【右カラム】カウンター席（お客さんたち） -->
+            <div class="w-7/12 flex flex-col justify-between min-h-0">
+                <div class="text-center mb-1">
+                    <span class="text-[10px] bg-blue-950/50 text-blue-300 px-3 py-0.5 rounded-full border border-blue-900/30 font-bold">
+                        海の仲間たちのカウンター席 (3席)
+                    </span>
+                </div>
+
+                <!-- お客さんスロット（最大3名、縦並びで1画面にキレイに整列） -->
+                <div id="customer-slots" class="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden justify-around">
+                    <!-- JSで動的に追加されます -->
+                </div>
+            </div>
+        </main>
+
+        <!-- メニュー・ショップ切り替えフッター -->
+        <footer class="p-2 bg-slate-950/90 border-t border-blue-900/50 z-10 flex justify-around items-center h-12">
+            <button onclick="switchTab('game')" class="flex items-center gap-1.5 text-blue-400 active:scale-95 transition-all">
+                <i data-lucide="coffee" class="w-4 h-4"></i>
+                <span class="text-[11px] font-bold">カフェ営業</span>
+            </button>
+            <button onclick="openShop()" class="flex items-center gap-1.5 text-slate-400 hover:text-blue-400 active:scale-95 transition-all relative">
+                <i data-lucide="store" class="w-4 h-4"></i>
+                <span class="text-[11px] font-bold">お店アップグレード</span>
+                <span id="shop-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] rounded-full w-3.5 h-3.5 flex items-center justify-center hidden">!</span>
+            </button>
+            <button onclick="openRecipeBook()" class="flex items-center gap-1.5 text-slate-400 hover:text-blue-400 active:scale-95 transition-all">
+                <i data-lucide="book-open" class="w-4 h-4"></i>
+                <span class="text-[11px] font-bold">レシピ帳</span>
+            </button>
+        </footer>
+
+        <!-- アップグレード・ショップモーダル -->
+        <div id="shop-modal" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md z-40 hidden flex flex-col p-5 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-blue-300 flex items-center gap-1">
+                    <i data-lucide="store" class="w-4 h-4"></i> 海底ショップ
+                </h3>
+                <button onclick="closeShop()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-xl border border-blue-900/40 mb-4 justify-between">
+                <span class="text-xs text-slate-300">手持ちコイン:</span>
+                <span class="text-lg font-bold text-yellow-400">🪙 <span id="shop-coins">0</span></span>
+            </div>
+
+            <!-- アップグレード商品リスト -->
+            <div class="space-y-2.5 flex-1 overflow-y-auto pr-1" id="shop-items">
+                <!-- JSでショップアイテム生成 -->
+            </div>
+        </div>
+
+        <!-- レシピブックモーダル -->
+        <div id="recipe-modal" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md z-40 hidden flex flex-col p-5 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-cyan-300 flex items-center gap-1">
+                    <i data-lucide="book-open" class="w-4 h-4"></i> 海底レシピ図鑑
+                </h3>
+                <button onclick="closeRecipeBook()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2 flex-1 overflow-y-auto pr-1" id="recipe-list">
+                <!-- JSでレシピ一覧生成 -->
+            </div>
+        </div>
+
+        <!-- カスタム通知ポップアップ (Alert代わり) -->
+        <div id="custom-toast" class="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-900/95 border border-blue-500 text-white px-4 py-1.5 rounded-full text-[10px] shadow-xl z-50 pointer-events-none opacity-0 transition-opacity duration-300 flex items-center gap-1">
+            <span id="toast-icon">✨</span> <span id="toast-text">トースト通知</span>
+        </div>
+    </div>
+
+    <!-- Web Audio API を用いた効果音・シンセサイザーの簡易実装 -->
+    <script>
+        // 音声コントローラー
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playTone(freq, type, duration, delay = 0) {
+                this.init();
+                if (!this.ctx) return;
+                setTimeout(() => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                }, delay * 1000);
+            }
+            playSelect() {
+                this.playTone(523.25, 'sine', 0.1); // C5
+            }
+            playCook() {
+                this.playTone(392.00, 'triangle', 0.12); // G4
+                this.playTone(587.33, 'triangle', 0.12, 0.06); // D5
+            }
+            playDeliver() {
+                this.playTone(523.25, 'sine', 0.08); // C5
+                this.playTone(659.25, 'sine', 0.08, 0.06); // E5
+                this.playTone(783.99, 'sine', 0.08, 0.12); // G5
+                this.playTone(1046.50, 'sine', 0.15, 0.18); // C6
+            }
+            playFail() {
+                this.playTone(293.66, 'sawtooth', 0.25); // D4
+                this.playTone(220.00, 'sawtooth', 0.35, 0.1); // A3
+            }
+            playBuy() {
+                this.playTone(587.33, 'sine', 0.08);
+                this.playTone(880.00, 'sine', 0.18, 0.08);
+            }
+            playSkill() {
+                const notes = [349.23, 440.00, 523.25, 659.25, 783.99]; // F A C E G
+                notes.forEach((f, i) => {
+                    this.playTone(f, 'sine', 0.6, i * 0.12);
+                });
+            }
+        }
+        const sfx = new SoundEffects();
+    </script>
+
+    <!-- メインゲームロジック -->
+    <script>
+        // お客さんのキャラクター素材
+        const CUSTOMERS_DB = [
+            { name: "たこ八", emoji: "🐙", desc: "ちょっとせっかちなたこくん。" },
+            { name: "らっこちゃん", emoji: "🦦", desc: "貝が大好き。甘いものには目がない。" },
+            { name: "ペンタ", emoji: "🐧", desc: "ひんやり冷たいスイーツがお気に入り。" },
+            { name: "ウミカメ長老", emoji: "🐢", desc: "ゆっくりお茶を楽しみたいおじいさん。" },
+            { name: "えびお", emoji: "🦐", desc: "カラフルなドリンクを頼みたがるえびくん。" },
+            { name: "くらげ姫", emoji: "🪼", desc: "光るキラキラした飲み物が大好き。" },
+            { name: "ヤドカリくん", emoji: "🐚", desc: "小さくて素朴な料理が好き。" },
+            { name: "サメ親分", emoji: "🦈", desc: "実はかわいいスイーツが大好きで照れ屋さん。" }
+        ];
+
+        // 食材素材データベース
+        const INGREDIENTS_DB = {
+            sea_water: { id: "sea_water", name: "厳選海水", emoji: "💧", color: "text-blue-400 bg-blue-950/40 border-blue-800" },
+            seaweed: { id: "seaweed", name: "ふかふか海藻", emoji: "🌿", color: "text-emerald-400 bg-emerald-950/40 border-emerald-800" },
+            pearl_pearl: { id: "pearl_pearl", name: "真珠タピオカ", emoji: "⚪", color: "text-slate-300 bg-slate-900 border-slate-700" },
+            star_dust: { id: "star_dust", name: "星の砂シュガー", emoji: "⭐", color: "text-yellow-400 bg-yellow-950/40 border-yellow-800" },
+            coral_syrup: { id: "coral_syrup", name: "サンゴシロップ", emoji: "🍒", color: "text-rose-400 bg-rose-950/40 border-rose-800" },
+            deep_ice: { id: "deep_ice", name: "深海氷", emoji: "🧊", color: "text-cyan-400 bg-cyan-950/40 border-cyan-800" },
+            shell_plate: { id: "shell_plate", name: "貝がらの器", emoji: "🐚", color: "text-amber-200 bg-amber-950/40 border-amber-800" },
+            rainbow_jelly: { id: "rainbow_jelly", name: "虹色くらげゼリー", emoji: "🌈", color: "text-purple-400 bg-purple-950/40 border-purple-800", locked: true }
+        };
+
+        // レシピデータベース (材料の順序は問わない)
+        const RECIPES_DB = [
+            { id: "deep_sea_latte", name: "深海ソルトラテ", icon: "☕", ingredients: ["sea_water", "star_dust"], price: 30, desc: "ほんのり塩気が効いた海底の定番ラテ。" },
+            { id: "bubble_tea", name: "真珠のバブルティー", icon: "🍹", ingredients: ["sea_water", "pearl_pearl"], price: 40, desc: "真珠のようなモチモチタピオカ入りティー。" },
+            { id: "emerald_tea", name: "わかめハーブ茶", icon: "🍵", ingredients: ["sea_water", "seaweed"], price: 35, desc: "海藻の旨みが凝縮したヘルシーなお茶。" },
+            { id: "star_sherbet", name: "星くずシャーベット", icon: "🍧", ingredients: ["deep_ice", "star_dust", "shell_plate"], price: 60, desc: "キラキラ光る星の砂をまぶした極上ひんやりスイーツ。" },
+            { id: "coral_soda", name: "サンゴのソーダシュワッシュ", icon: "🥤", ingredients: ["sea_water", "coral_syrup", "deep_ice"], price: 55, desc: "夕暮れ時のサンゴ礁をイメージした鮮やかな炭酸飲料。" },
+            { id: "ocean_parfait", name: "深海コーラルパフェ", icon: "🍨", ingredients: ["shell_plate", "pearl_pearl", "coral_syrup", "seaweed"], price: 85, desc: "海の宝物をぎゅっと詰め込んだ贅沢な貝がらパフェ。" },
+            { id: "rainbow_soda", name: "虹色くらげフロート", icon: "🍹", ingredients: ["sea_water", "deep_ice", "rainbow_jelly"], price: 120, desc: "虹色にゆらめく、注文できたら超ラッキーな限定フロート。", locked: true }
+        ];
+
+        // アップグレードショップアイテム
+        const UPGRADES_DB = [
+            { id: "unlocked_rainbow_jelly", name: "素材: 虹色くらげゼリー", desc: "新素材が追加され、単価120コインの高級ドリンク「虹色くらげフロート」が作れるようになります！", price: 100, icon: "🌈", type: "ingredient", purchased: false },
+            { id: "customer_patience", name: "店内のBGM（オルゴール）", desc: "お客さまの待ち時間（機嫌ゲージ）の減りが15%遅くなります。", price: 150, icon: "🎵", type: "patience", purchased: false },
+            { id: "double_tips", name: "くじらの金色のジョウロ", desc: "時々お客さまが20%多くチップ(コイン)をくれるようになります。", price: 220, icon: "🪙", type: "tips", purchased: false },
+            { id: "faster_skill", name: "くじら店長の歌唱レッスン", desc: "スキル「くじらの歌」のクールダウンが30秒から15秒に短縮されます。", price: 280, icon: "🎤", type: "cooldown", purchased: false }
+        ];
+
+        // ゲームステート
+        let gameState = {
+            coins: 0,
+            day: 1,
+            unlockedRecipes: ["deep_sea_latte", "bubble_tea", "emerald_tea", "star_sherbet", "coral_soda", "ocean_parfait"],
+            unlockedIngredients: ["sea_water", "seaweed", "pearl_pearl", "star_dust", "coral_syrup", "deep_ice", "shell_plate"],
+            tray: [], // 調理台にある素材
+            customers: [null, null, null], // 3つの席
+            isPlaying: false,
+            isPaused: false, // 一時停止フラグ
+            skillReady: true,
+            skillCooldown: 30000, // デフォルト30秒
+            lastTime: 0,
+            gameLoopId: null,
+            doubleTipChance: 0
+        };
+
+        // 一時停止（ポーズ）の切り替え
+        function togglePause() {
+            if (!gameState.isPlaying) return;
+            sfx.playSelect();
+
+            gameState.isPaused = !gameState.isPaused;
+
+            const pauseScreen = document.getElementById("pause-screen");
+            const pauseIcon = document.getElementById("pause-icon");
+            const pauseText = document.getElementById("pause-text");
+
+            if (gameState.isPaused) {
+                // 一時停止時のUI
+                pauseScreen.classList.remove("hidden");
+                pauseIcon.setAttribute("data-lucide", "play");
+                pauseText.textContent = "再開する";
+                showToast("ゲームを一時停止しました ⏸️", "⏸️");
+            } else {
+                // 再開時のUI
+                pauseScreen.classList.add("hidden");
+                pauseIcon.setAttribute("data-lucide", "pause");
+                pauseText.textContent = "一時停止";
+                showToast("ゲームを再開します ▶️", "🌊");
+                // ポーズ中に開いていたモーダルがあれば念のため閉じる
+                closeShop();
+                closeRecipeBook();
+                // 最終フレーム時刻の更新（コマ飛び防止）
+                gameState.lastTime = Date.now();
+            }
+            lucide.createIcons();
+        }
+
+        // UI切り替え
+        function switchTab(tab) {
+            if (gameState.isPaused) return; // ポーズ中は操作不可
+            sfx.playSelect();
+            if (tab === 'game') {
+                closeShop();
+                closeRecipeBook();
+            }
+        }
+
+        function openShop() {
+            if (gameState.isPaused) return; // ポーズ中は操作不可
+            sfx.playSelect();
+            const modal = document.getElementById("shop-modal");
+            modal.classList.remove("hidden");
+            document.getElementById("shop-coins").textContent = gameState.coins;
+            renderShopItems();
+            updateShopBadge();
+        }
+
+        function closeShop() {
+            document.getElementById("shop-modal").classList.add("hidden");
+        }
+
+        function openRecipeBook() {
+            if (gameState.isPaused) return; // ポーズ中は操作不可
+            sfx.playSelect();
+            const modal = document.getElementById("recipe-modal");
+            modal.classList.remove("hidden");
+            renderRecipeBook();
+        }
+
+        function closeRecipeBook() {
+            document.getElementById("recipe-modal").classList.add("hidden");
+        }
+
+        // トースト通知システム
+        function showToast(text, icon = "✨") {
+            const toast = document.getElementById("custom-toast");
+            document.getElementById("toast-icon").textContent = icon;
+            document.getElementById("toast-text").textContent = text;
+            toast.classList.remove("opacity-0");
+            toast.classList.add("opacity-100");
+            setTimeout(() => {
+                toast.classList.remove("opacity-100");
+                toast.classList.add("opacity-0");
+            }, 1800);
+        }
+
+        // 泡エフェクト自動生成
+        function createBubbles() {
+            const container = document.getElementById("bubble-container");
+            setInterval(() => {
+                if (!gameState.isPlaying || gameState.isPaused) return;
+                const bubble = document.createElement("div");
+                bubble.className = "bubble";
+                const size = Math.random() * 12 + 4;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${Math.random() * 100}%`;
+                bubble.style.bottom = "-20px";
+                bubble.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                container.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 10000);
+            }, 1000);
+        }
+
+        // 初期化
+        window.onload = function() {
+            lucide.createIcons();
+            createBubbles();
+            renderIngredients();
+            updateShopBadge();
+        };
+
+        // ゲーム開始
+        function startGame() {
+            sfx.playSelect();
+            document.getElementById("start-screen").style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById("start-screen").classList.add("hidden");
+            }, 500);
+
+            // ステート初期化
+            gameState.coins = 0;
+            gameState.day = 1;
+            gameState.tray = [];
+            gameState.customers = [null, null, null];
+            gameState.isPlaying = true;
+            gameState.isPaused = false;
+            gameState.skillReady = true;
+            
+            // UIリセット
+            document.getElementById("pause-screen").classList.add("hidden");
+            const pauseIcon = document.getElementById("pause-icon");
+            pauseIcon.setAttribute("data-lucide", "pause");
+            document.getElementById("pause-text").textContent = "一時停止";
+            lucide.createIcons();
+
+            // アップグレードのリセット
+            UPGRADES_DB.forEach(u => u.purchased = false);
+            INGREDIENTS_DB.rainbow_jelly.locked = true;
+            RECIPES_DB.find(r => r.id === "rainbow_soda").locked = true;
+            gameState.unlockedRecipes = ["deep_sea_latte", "bubble_tea", "emerald_tea", "star_sherbet", "coral_soda", "ocean_parfait"];
+            gameState.unlockedIngredients = ["sea_water", "seaweed", "pearl_pearl", "star_dust", "coral_syrup", "deep_ice", "shell_plate"];
+            gameState.skillCooldown = 30000;
+            gameState.doubleTipChance = 0;
+
+            updateUI();
+            renderIngredients();
+
+            // 最初のお客さま召喚
+            spawnCustomer(0);
+            setTimeout(() => spawnCustomer(1), 2500);
+
+            // ゲームループ開始
+            gameState.lastTime = Date.now();
+            if (gameState.gameLoopId) cancelAnimationFrame(gameState.gameLoopId);
+            gameLoop();
+        }
+
+        // お客さまを出現させる
+        function spawnCustomer(slotIndex) {
+            if (!gameState.isPlaying || gameState.isPaused) return;
+            if (gameState.customers[slotIndex] !== null) return;
+
+            const customerBase = CUSTOMERS_DB[Math.floor(Math.random() * CUSTOMERS_DB.length)];
+            
+            // 解放されているレシピからランダムに決定
+            const availableRecipes = RECIPES_DB.filter(r => !r.locked);
+            const orderedRecipe = availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+
+            // 日数に応じてスピードアップ
+            let patienceDecay = 0.08 + (gameState.day * 0.012);
+            // 音楽アップグレードがある場合は遅くする
+            if (UPGRADES_DB.find(u => u.id === "customer_patience").purchased) {
+                patienceDecay *= 0.85;
+            }
+
+            gameState.customers[slotIndex] = {
+                name: customerBase.name,
+                emoji: customerBase.emoji,
+                recipe: orderedRecipe,
+                patience: 100, // ％
+                patienceDecay: patienceDecay, 
+                state: "waiting" // waiting | eating | leaving
+            };
+
+            renderCustomerSlots();
+        }
+
+        function restartGame() {
+            document.getElementById("gameover-screen").classList.add("hidden");
+            startGame();
+        }
+
+        // ゲームループ
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+
+            const now = Date.now();
+
+            // 一時停止中の場合は時刻更新のみ行い、処理をスキップ
+            if (gameState.isPaused) {
+                gameState.lastTime = now;
+                gameState.gameLoopId = requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            const dt = (now - gameState.lastTime) / 1000; // 秒単位
+            gameState.lastTime = now;
+
+            // お客さまの機嫌値更新
+            for (let i = 0; i < gameState.customers.length; i++) {
+                const customer = gameState.customers[i];
+                if (customer) {
+                    if (customer.state === "waiting") {
+                        customer.patience -= customer.patienceDecay * dt * 100;
+                        if (customer.patience <= 0) {
+                            // 怒って帰ってしまう（※ライフ無限なので、reputationは減らさない）
+                            gameState.customers[i] = null;
+                            showToast(`${customer.name}さんは待ちくたびれて帰ってしまいました…`, "😢");
+                            sfx.playTone(220, 'sawtooth', 0.4);
+                            
+                            // 新しいお客を呼ぶタイマー
+                            setTimeout(() => spawnCustomer(i), Math.random() * 3000 + 2000);
+                        }
+                    } else if (customer.state === "eating") {
+                        customer.patience -= 35 * dt; // 食べる時間
+                        if (customer.patience <= 0) {
+                            // 完食！退店
+                            gameState.customers[i] = null;
+                            setTimeout(() => spawnCustomer(i), Math.random() * 3000 + 2000);
+                        }
+                    }
+                }
+            }
+
+            // カウンター席が全部空いている場合は強制的に一人スポーン
+            const emptyCount = gameState.customers.filter(c => c === null).length;
+            if (emptyCount === 3) {
+                spawnCustomer(Math.floor(Math.random() * 3));
+            }
+
+            // 日数経過のロジック (約45秒ごとに次の日へ)
+            const computedDay = Math.floor(now / 45000) - Math.floor(gameState.lastTime / 45000);
+            if (computedDay > 0) {
+                gameState.day++;
+                showToast(`新しい日が始まりました！ (Day ${gameState.day})`, "☀️");
+                document.getElementById("day-count").textContent = gameState.day;
+            }
+
+            renderCustomerSlots();
+            updateUI();
+
+            gameState.gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // 状態表示更新
+        function updateUI() {
+            document.getElementById("coin-count").textContent = gameState.coins;
+            document.getElementById("day-count").textContent = gameState.day;
+            updateShopBadge();
+        }
+
+        // 調理台（トレイ）への素材追加
+        function selectIngredient(ingId) {
+            if (!gameState.isPlaying || gameState.isPaused) return; // 一時停止中はガード
+            sfx.playCook();
+
+            if (gameState.tray.length >= 4) {
+                showToast("トレイがいっぱいです！", "⚠️");
+                return;
+            }
+
+            gameState.tray.push(ingId);
+            renderTray();
+        }
+
+        // 調理台を空にする
+        function clearTray() {
+            if (gameState.isPaused) return; // 一時停止中はガード
+            if (gameState.tray.length === 0) return;
+            sfx.playTone(300, 'sine', 0.1);
+            gameState.tray = [];
+            renderTray();
+        }
+
+        // トレイのレンダリング
+        function renderTray() {
+            const slots = document.getElementById("tray-slots");
+            const emptyMsg = document.getElementById("tray-empty-message");
+            slots.innerHTML = "";
+
+            if (gameState.tray.length === 0) {
+                emptyMsg.classList.remove("hidden");
+                return;
+            } else {
+                emptyMsg.classList.add("hidden");
+            }
+
+            gameState.tray.forEach((ingId, idx) => {
+                const ing = INGREDIENTS_DB[ingId];
+                const div = document.createElement("div");
+                div.className = `flex flex-col items-center justify-center p-1 rounded-lg border bg-slate-900 border-slate-700 text-xs w-10 h-10 relative animate-bounce`;
+                div.innerHTML = `
+                    <span class="text-lg">${ing.emoji}</span>
+                    <button onclick="removeTrayItem(${idx}); event.stopPropagation();" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px] font-bold">×</button>
+                `;
+                slots.appendChild(div);
+            });
+        }
+
+        // トレイから個別削除
+        function removeTrayItem(idx) {
+            if (gameState.isPaused) return; // 一時停止中はガード
+            sfx.playTone(300, 'sine', 0.1);
+            gameState.tray.splice(idx, 1);
+            renderTray();
+        }
+
+        // お客さまへの料理提供
+        function deliverToCustomer(slotIndex) {
+            if (!gameState.isPlaying || gameState.isPaused) return; // 一時停止中はガード
+            const customer = gameState.customers[slotIndex];
+            if (!customer) {
+                showToast("そこには誰も座っていません！", "❓");
+                return;
+            }
+            if (customer.state !== "waiting") return;
+
+            if (gameState.tray.length === 0) {
+                showToast("トレイが空っぽです！", "🍳");
+                return;
+            }
+
+            // 提供しようとしているトレイの中身と、注文レシピの合致確認
+            const required = [...customer.recipe.ingredients].sort();
+            const current = [...gameState.tray].sort();
+
+            const isMatch = (required.length === current.length) && required.every((val, index) => val === current[index]);
+
+            if (isMatch) {
+                // 大成功！
+                sfx.playDeliver();
+                
+                // チップ（コイン）計算
+                let earned = customer.recipe.price;
+                // 機嫌が良ければボーナスコイン
+                if (customer.patience > 70) {
+                    earned += 15;
+                    showToast("大喜び！チップをくれました！", "✨");
+                } else if (customer.patience > 40) {
+                    earned += 5;
+                }
+
+                // ジョウロアップグレードで追加チップチャンス
+                if (UPGRADES_DB.find(u => u.id === "double_tips").purchased) {
+                    if (Math.random() < 0.35) {
+                        earned = Math.round(earned * 1.25);
+                        showToast("金のジョウロ効果！チップ25%増量！", "🪙");
+                    }
+                }
+
+                gameState.coins += earned;
+                
+                // お客さんの状態を「もぐもぐ中」にする
+                customer.state = "eating";
+                customer.patience = 100; // 完食カウントダウンに使用
+                showToast(`「ありがとう！おいしそう！」 (+🪙${earned})`, "💖");
+
+                // トレイを空にする
+                gameState.tray = [];
+                renderTray();
+                renderCustomerSlots();
+                updateUI();
+            } else {
+                // レシピ間違い
+                sfx.playTone(180, 'triangle', 0.25);
+                showToast(`「頼んだものと少し違うかも…？」`, "😅");
+                // 機嫌が少し下がる
+                customer.patience = Math.max(10, customer.patience - 25);
+                renderCustomerSlots();
+            }
+        }
+
+        // スペシャルスキル：くじらの歌
+        function useKujiraSkill() {
+            if (!gameState.isPlaying || !gameState.skillReady || gameState.isPaused) return; // 一時停止中はガード
+
+            sfx.playSkill();
+            gameState.skillReady = false;
+
+            // カウンターの全員の機嫌（待ち時間）を全回復！
+            gameState.customers.forEach(customer => {
+                if (customer && customer.state === "waiting") {
+                    customer.patience = 100;
+                }
+            });
+
+            showToast("くじら店長が心地よい歌を奏で、みんなの心が癒やされた！", "🎵");
+            
+            // くじらの表情を一時的にハッピーに
+            const characterEl = document.getElementById("kujira-character");
+            characterEl.textContent = "🐋✨";
+            setTimeout(() => {
+                characterEl.textContent = "🐳";
+            }, 3000);
+
+            renderCustomerSlots();
+
+            // クールダウン開始
+            const btn = document.getElementById("skill-btn");
+            const overlay = document.getElementById("skill-cooldown-overlay");
+            btn.disabled = true;
+            
+            let cdTime = gameState.skillCooldown / 1000;
+            overlay.style.width = "100%";
+            overlay.textContent = `${cdTime}s`;
+
+            const interval = setInterval(() => {
+                // ポーズ中はクールダウンの秒数減少も一時停止
+                if (gameState.isPaused) return;
+
+                cdTime--;
+                if (cdTime <= 0) {
+                    clearInterval(interval);
+                    overlay.style.width = "0%";
+                    btn.disabled = false;
+                    gameState.skillReady = true;
+                    showToast("「くじらの歌」がまた使えます！", "🎵");
+                } else {
+                    overlay.textContent = `${cdTime}s`;
+                }
+            }, 1000);
+        }
+
+        // お客さまカウンター席の描画（横型3席の均等レイアウト、各席高さを固定）
+        function renderCustomerSlots() {
+            const container = document.getElementById("customer-slots");
+            container.innerHTML = "";
+
+            gameState.customers.forEach((customer, index) => {
+                const slot = document.createElement("div");
+                
+                if (customer === null) {
+                    // 空席 (高さを制限)
+                    slot.className = "bg-slate-900/20 border border-dashed border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center h-[90px] transition-all duration-300";
+                    slot.innerHTML = `
+                        <span class="text-slate-600 text-[10px] italic">空き席（もうすぐお席をご案内します）</span>
+                    `;
+                } else {
+                    // お客さま着席中
+                    let patienceColor = "bg-emerald-500";
+                    let patienceTextColor = "text-emerald-400";
+                    if (customer.patience < 35) {
+                        patienceColor = "bg-red-500";
+                        patienceTextColor = "text-red-400 animate-pulse font-bold";
+                    } else if (customer.patience < 65) {
+                        patienceColor = "bg-yellow-500";
+                        patienceTextColor = "text-yellow-400";
+                    }
+
+                    let statusText = "";
+                    if (customer.state === "eating") {
+                        statusText = `<span class="text-[8px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded-full">食事中 😋</span>`;
+                    } else {
+                        statusText = `<span class="text-[8px] bg-amber-950 text-amber-400 border border-amber-800 px-1.5 py-0.5 rounded-full">注文中 ⏳</span>`;
+                    }
+
+                    const recipeIngredientsHint = customer.recipe.ingredients.map(id => INGREDIENTS_DB[id].emoji).join(" + ");
+
+                    slot.className = `bg-slate-900/90 border ${customer.patience < 35 ? 'border-red-500/40' : 'border-blue-900/30'} rounded-xl p-2.5 flex justify-between items-center gap-2 h-[95px] relative transition-all duration-300`;
+                    slot.innerHTML = `
+                        <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                            <div class="text-3xl text-center w-10 flex-shrink-0">
+                                ${customer.emoji}
+                                <div class="text-[8px] font-bold text-slate-300 mt-0.5 truncate">${customer.name}</div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1 mb-0.5">
+                                    ${statusText}
+                                </div>
+                                <div class="text-[9px] text-slate-400">注文:</div>
+                                <div class="text-xs font-bold text-blue-200 flex items-center gap-1 truncate">
+                                    <span class="text-sm">${customer.recipe.icon}</span> ${customer.recipe.name}
+                                </div>
+                                <div class="text-[9px] text-slate-400 mt-0.5 truncate">
+                                    レシピ: <span class="bg-slate-950/60 px-1.5 py-0.5 rounded text-blue-300 font-bold">${recipeIngredientsHint}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 顧客機嫌度(タイムリミット) -->
+                        <div class="flex flex-col items-end justify-center w-16 flex-shrink-0">
+                            ${customer.state === 'waiting' ? `
+                                <span class="text-[8px] ${patienceTextColor} mb-0.5">待ち: ${Math.round(customer.patience)}%</span>
+                                <div class="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+                                    <div class="${patienceColor} h-full transition-all duration-100" style="width: ${customer.patience}%"></div>
+                                </div>
+                            ` : `
+                                <div class="text-center w-full">
+                                    <span class="text-base animate-bounce">🌊</span>
+                                    <p class="text-[7px] text-emerald-400">大満足！</p>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }
+
+                container.appendChild(slot);
+            });
+        }
+
+        // 食材素材グリッドの描画
+        function renderIngredients() {
+            const grid = document.getElementById("ingredients-grid");
+            grid.innerHTML = "";
+
+            Object.values(INGREDIENTS_DB).forEach(ing => {
+                const isLocked = ing.locked;
+                const btn = document.createElement("button");
+                
+                if (isLocked) {
+                    btn.className = "flex flex-col items-center justify-center p-1.5 rounded-xl bg-slate-900/20 border border-slate-950 text-slate-600 cursor-not-allowed text-[10px]";
+                    btn.disabled = true;
+                    btn.innerHTML = `
+                        <span class="text-base filter grayscale">🔒</span>
+                        <span class="text-[8px] font-bold truncate max-w-[50px]">ロック</span>
+                    `;
+                } else {
+                    btn.className = `flex flex-col items-center justify-center p-1.5 rounded-xl border ${ing.color} hover:brightness-110 active:scale-95 transition-all text-[10px]`;
+                    btn.onclick = () => selectIngredient(ing.id);
+                    btn.innerHTML = `
+                        <span class="text-lg">${ing.emoji}</span>
+                        <span class="text-[8px] font-bold truncate max-w-[50px] mt-0.5">${ing.name}</span>
+                    `;
+                }
+
+                grid.appendChild(btn);
+            });
+        }
+
+        // レシピ図鑑の描画
+        function renderRecipeBook() {
+            const list = document.getElementById("recipe-list");
+            list.innerHTML = "";
+
+            RECIPES_DB.forEach(recipe => {
+                const ingredientsHtml = recipe.ingredients.map(ingId => {
+                    const ing = INGREDIENTS_DB[ingId];
+                    return `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-[9px] text-slate-300">${ing.emoji} ${ing.name}</span>`;
+                }).join(" + ");
+
+                const item = document.createElement("div");
+                item.className = `p-2.5 rounded-xl border ${recipe.locked ? 'bg-slate-950/40 border-slate-900 text-slate-600' : 'bg-slate-900/60 border-blue-900/30 text-slate-200'} flex items-start gap-2.5`;
+                
+                if (recipe.locked) {
+                    item.innerHTML = `
+                        <div class="text-xl opacity-30">🔒</div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-500">??? (未解放レシピ)</div>
+                            <div class="text-[9px] text-slate-600">海底ショップで「虹色くらげゼリー」を購入すると解放されます。</div>
+                        </div>
+                    `;
+                } else {
+                    item.innerHTML = `
+                        <div class="text-2xl">${recipe.icon}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-blue-200">${recipe.name}</span>
+                                <span class="text-[9px] text-yellow-400 font-bold">価格: 🪙${recipe.price}</span>
+                            </div>
+                            <p class="text-[9px] text-slate-400 my-0.5 leading-tight">${recipe.desc}</p>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${ingredientsHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+                list.appendChild(item);
+            });
+        }
+
+        // ショップアイテムの描画
+        function renderShopItems() {
+            const container = document.getElementById("shop-items");
+            container.innerHTML = "";
+
+            UPGRADES_DB.forEach(upgrade => {
+                const isPurchased = upgrade.purchased;
+                const canAfford = gameState.coins >= upgrade.price;
+                const buttonClass = isPurchased 
+                    ? "bg-slate-800 text-slate-500 cursor-not-allowed" 
+                    : (canAfford ? "bg-yellow-600 hover:bg-yellow-700 text-slate-950 font-bold" : "bg-slate-800 text-slate-400 cursor-not-allowed");
+
+                const card = document.createElement("div");
+                card.className = "bg-slate-900/80 border border-blue-950 rounded-xl p-2.5 flex justify-between items-center gap-2.5";
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="text-2xl p-1.5 bg-slate-950 rounded-xl flex-shrink-0">${upgrade.icon}</div>
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-blue-300 truncate">${upgrade.name}</h4>
+                            <p class="text-[9px] text-slate-400 mt-0.5 leading-snug max-w-[240px]">${upgrade.desc}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onclick="buyUpgrade('${upgrade.id}')" 
+                        ${isPurchased || !canAfford ? 'disabled' : ''} 
+                        class="px-2.5 py-1 rounded-lg text-[10px] transition-all flex-shrink-0 ${buttonClass}"
+                    >
+                        ${isPurchased ? '購入済' : `🪙${upgrade.price}`}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // アップグレード購入
+        function buyUpgrade(id) {
+            const upgrade = UPGRADES_DB.find(u => u.id === id);
+            if (!upgrade || upgrade.purchased || gameState.coins < upgrade.price) return;
+
+            sfx.playBuy();
+            gameState.coins -= upgrade.price;
+            upgrade.purchased = true;
+
+            // 効果の適用
+            if (id === "unlocked_rainbow_jelly") {
+                INGREDIENTS_DB.rainbow_jelly.locked = false;
+                RECIPES_DB.find(r => r.id === "rainbow_soda").locked = false;
+                gameState.unlockedIngredients.push("rainbow_jelly");
+                gameState.unlockedRecipes.push("rainbow_soda");
+                renderIngredients();
+                showToast("新素材『虹色くらげゼリー』が追加されました！", "🌈");
+            } else if (id === "customer_patience") {
+                showToast("店内におだやかなオルゴールが流れ、お客の待ち時間が長くなりました！", "🎵");
+            } else if (id === "double_tips") {
+                showToast("金のジョウロのきらめきで、時々多くのチップをもらえるようになりました！", "🪙");
+            } else if (id === "faster_skill") {
+                gameState.skillCooldown = 15000; // クールダウンを15秒に短縮
+                showToast("くじら店長の歌のテンポがよくなり、クールダウンが半分になりました！", "🎤");
+            }
+
+            document.getElementById("shop-coins").textContent = gameState.coins;
+            renderShopItems();
+            updateUI();
+        }
+
+        // ショップバッジの更新 (お買得・買えるものがあるか)
+        function updateShopBadge() {
+            const canBuyAny = UPGRADES_DB.some(u => !u.purchased && gameState.coins >= u.price);
+            const badge = document.getElementById("shop-badge");
+            if (canBuyAny && gameState.isPlaying) {
+                badge.classList.remove("hidden");
+            } else {
+                badge.classList.add("hidden");
+            }
+        }
+    </script>
+</body>
+</html>
